@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 const PRODUCTS = [
@@ -15,7 +16,7 @@ const PRODUCTS = [
     id: 2,
     title: "Nexus Admin Dashboard",
     price: 49,
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuDKeG_Tq6ChLi8_5fEgm-w4DZJdvRT-YohV8UgvOpS4pRhfheDOv7vXAqOGHrODDZGY8fxcy8RLh6Rx9g6-hT9qmkYlomEaTr5ub4N5cekib5sXpXa8jeTajGcMY7pytI5UuxrTP4NeV1i-USt52_mrZOtnegxKRi0Zk45x9LaGcVuI3wyZkvKTrKZ1dzhQ0Pa4RlQkpnfK4FrwgednDasXDaVWTqoBUKLXiYiF43Kss7_yS0CikOYbTmCPZGAuMb-HelMjpeBh36Ym",
+    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuKeG_Tq6ChLi8_5fEgm-w4DZJdvRT-YohV8UgvOpS4pRhfheDOv7vXAqOGHrODDZGY8fxcy8RLh6Rx9g6-hT9qmkYlomEaTr5ub4N5cekib5sXpXa8jeTajGcMY7pytI5UuxrTP4NeV1i-USt52_mrZOtnegxKRi0Zk45x9LaGcVuI3wyZkvKTrKZ1dzhQ0Pa4RlQkpnfK4FrwgednDasXDaVWTqoBUKLXiYiF43Kss7_yS0CikOYbTmCPZGAuMb-HelMjpeBh36Ym",
     tags: ["React", "Tailwind", "Chart.js"],
     isNew: false,
   },
@@ -39,10 +40,10 @@ export default function FeaturedProducts() {
             Curated top-tier assets for high-performance projects, reviewed by our elite developer team.
           </p>
         </div>
-        <a href="#" className="text-primary font-semibold flex items-center gap-2 group hover:underline text-sm">
+        <Link href="/signup" className="text-primary font-semibold flex items-center gap-2 group hover:underline text-sm">
           View All Marketplace
           <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform text-sm">arrow_forward</span>
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

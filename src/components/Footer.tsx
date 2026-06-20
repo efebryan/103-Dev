@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function Footer() {
@@ -15,7 +16,7 @@ export default function Footer() {
     <footer className="bg-surface-container-lowest border-t border-outline-variant w-full py-16 mt-20">
       <div className="max-w-[1280px] mx-auto px-8 grid grid-cols-1 md:grid-cols-4 gap-12">
         <div className="space-y-6">
-          <a href="#" className="text-xl font-bold text-on-surface">103 Dev</a>
+          <Link href="/" className="text-xl font-bold text-on-surface">103 Dev</Link>
           <p className="text-on-surface-variant text-xs md:text-sm leading-relaxed">
             The premier marketplace for elite developer assets. High-performance, production-ready, and developer-approved.
           </p>
@@ -35,10 +36,10 @@ export default function Footer() {
         <div className="space-y-4">
           <h4 className="text-on-surface font-bold text-xs uppercase tracking-wider">Products</h4>
           <ul className="space-y-2 text-xs md:text-sm text-on-surface-variant">
-            <li><a href="#" className="hover:text-primary transition-colors">Browse Products</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Become a Seller</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Affiliate Program</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Free Assets</a></li>
+            <li><Link href="/signup" className="hover:text-primary transition-colors">Browse Products</Link></li>
+            <li><Link href="/signup" className="hover:text-primary transition-colors">Become a Seller</Link></li>
+            <li><Link href="/signup" className="hover:text-primary transition-colors">Affiliate Program</Link></li>
+            <li><Link href="/signup" className="hover:text-primary transition-colors">Free Assets</Link></li>
           </ul>
         </div>
 

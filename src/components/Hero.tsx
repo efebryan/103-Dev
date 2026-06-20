@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -29,12 +30,12 @@ export default function Hero() {
             Discover production-ready scripts, scalable SaaS boilerplates, admin dashboards, APIs, AI tools, and developer assets ready for deployment.
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="bg-primary text-on-primary px-8 py-4 rounded-xl text-base font-semibold hover:shadow-[0_0_30px_rgba(0,200,150,0.4)] transition-all active:scale-95 duration-200">
+            <Link href="/signup" className="bg-primary text-on-primary px-8 py-4 rounded-xl text-base font-semibold hover:shadow-[0_0_30px_rgba(0,200,150,0.4)] transition-all active:scale-95 duration-200 inline-block text-center">
               Explore Marketplace
-            </button>
-            <button className="bg-surface-container-high text-on-surface px-8 py-4 rounded-xl text-base font-semibold border border-outline-variant hover:bg-surface-bright transition-all active:scale-95 duration-200">
+            </Link>
+            <Link href="/signup" className="bg-surface-container-high text-on-surface px-8 py-4 rounded-xl text-base font-semibold border border-outline-variant hover:bg-surface-bright transition-all active:scale-95 duration-200 inline-block text-center">
               Become a Seller
-            </button>
+            </Link>
           </div>
           {/* Trust Badges */}
           <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-white/5">

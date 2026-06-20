@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export default function TopNavBar() {
   const [search, setSearch] = useState("");
+  const pathname = usePathname();
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-surface/60 backdrop-blur-lg border-b border-white/5 shadow-sm h-[72px] transition-colors duration-300">
@@ -14,16 +16,28 @@ export default function TopNavBar() {
             103 Dev
           </Link>
           <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
-            <Link href="#" className="text-primary border-b-2 border-primary pb-1 hover:text-primary transition-colors">
+            <Link 
+              href="/" 
+              className={pathname === "/" ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary transition-colors"}
+            >
               Marketplace
             </Link>
-            <Link href="#" className="text-on-surface-variant hover:text-primary transition-colors">
+            <Link 
+              href="/templates" 
+              className={pathname === "/templates" ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary transition-colors"}
+            >
               Templates
             </Link>
-            <Link href="#" className="text-on-surface-variant hover:text-primary transition-colors">
+            <Link 
+              href="/components" 
+              className={pathname === "/components" ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary transition-colors"}
+            >
               Components
             </Link>
-            <Link href="#" className="text-on-surface-variant hover:text-primary transition-colors">
+            <Link 
+              href="/docs" 
+              className={pathname === "/docs" ? "text-primary border-b-2 border-primary pb-1" : "text-on-surface-variant hover:text-primary transition-colors"}
+            >
               Documentation
             </Link>
           </div>
@@ -43,12 +57,12 @@ export default function TopNavBar() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="text-on-surface-variant text-sm font-medium hover:text-primary transition-colors">
+            <Link href="/login" className="text-on-surface-variant text-sm font-medium hover:text-primary transition-colors">
               Login
-            </button>
-            <button className="bg-primary-container text-on-primary-container px-5 py-2 rounded-lg text-sm font-semibold hover:scale-95 hover:bg-primary-container/90 transition-all duration-150">
+            </Link>
+            <Link href="/signup" className="bg-primary-container text-on-primary-container px-5 py-2 rounded-lg text-sm font-semibold hover:scale-95 hover:bg-primary-container/90 transition-all duration-150">
               Get Started
-            </button>
+            </Link>
           </div>
         </div>
       </div>

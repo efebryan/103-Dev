@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 export default function SellerCTA() {
@@ -24,9 +25,9 @@ export default function SellerCTA() {
           <p className="text-on-surface-variant text-base md:text-lg leading-relaxed">
             Join the most elite marketplace for developers. Reach thousands of customers and scale your business with our specialized platform.
           </p>
-          <button className="bg-primary text-on-primary px-10 py-4.5 rounded-2xl text-base font-semibold hover:shadow-[0_0_35px_rgba(0,200,150,0.35)] transition-all active:scale-95 duration-200">
+          <Link href="/signup" className="bg-primary text-on-primary px-10 py-4.5 rounded-2xl text-base font-semibold hover:shadow-[0_0_35px_rgba(0,200,150,0.35)] transition-all active:scale-95 duration-200 inline-block text-center">
             Apply to be a Seller
-          </button>
+          </Link>
         </div>
       </motion.div>
     </section>
