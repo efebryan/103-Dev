@@ -6,7 +6,6 @@ import Categories from "@/components/Categories";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import HowItWorks from "@/components/HowItWorks";
 import Testimonials from "@/components/Testimonials";
-import SellerCTA from "@/components/SellerCTA";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 
@@ -22,7 +21,6 @@ export default function Home() {
         <WhyChooseUs />
         <HowItWorks />
         <Testimonials />
-        <SellerCTA />
         <FAQ />
       </main>
       <Footer />

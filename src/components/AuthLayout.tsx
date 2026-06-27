@@ -24,23 +24,7 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
       </div>
 
       <div className="relative z-10 w-full max-w-[460px] flex flex-col items-center">
-        {/* Back Link */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-8"
-        >
-          <Link 
-            href="/" 
-            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-colors group"
-          >
-            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">
-              arrow_back
-            </span>
-            Back to Home
-          </Link>
-        </motion.div>
+
 
         {/* Branding & Header */}
         <motion.div 

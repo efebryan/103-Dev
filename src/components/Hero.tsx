@@ -33,9 +33,6 @@ export default function Hero() {
             <Link href="/signup" className="bg-primary text-on-primary px-8 py-4 rounded-xl text-base font-semibold hover:shadow-[0_0_30px_rgba(0,200,150,0.4)] transition-all active:scale-95 duration-200 inline-block text-center">
               Explore Marketplace
             </Link>
-            <Link href="/signup" className="bg-surface-container-high text-on-surface px-8 py-4 rounded-xl text-base font-semibold border border-outline-variant hover:bg-surface-bright transition-all active:scale-95 duration-200 inline-block text-center">
-              Become a Seller
-            </Link>
           </div>
           {/* Trust Badges */}
           <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-white/5">
