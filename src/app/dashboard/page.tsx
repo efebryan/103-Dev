@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const stats = [
@@ -32,10 +33,10 @@ export default function DashboardPage() {
   ];
 
   const resources = [
-    { title: "API Documentation", desc: "Full integration guides for all 103 Dev kits.", icon: "library_books", bgClass: "bg-primary/10", text: "text-primary" },
-    { title: "Community Discord", desc: "Connect with 5k+ developers on our server.", icon: "forum", bgClass: "bg-secondary/10", text: "text-secondary" },
-    { title: "CLI Toolbelt", desc: "Automate your workflow with our custom CLI.", icon: "terminal", bgClass: "bg-tertiary/10", text: "text-tertiary" },
-    { title: "Priority Support", desc: "Tickets respond in < 2 hours for Pro users.", icon: "live_help", bgClass: "bg-surface-container-highest", text: "text-on-surface" },
+    { title: "API Documentation", desc: "Full integration guides for all 103 Dev kits.", icon: "library_books", bgClass: "bg-primary/10", text: "text-primary", href: "/dashboard/docs" },
+    { title: "Community Discord", desc: "Connect with 5k+ developers on our server.", icon: "forum", bgClass: "bg-secondary/10", text: "text-secondary", href: "/dashboard/docs" },
+    { title: "CLI Toolbelt", desc: "Automate your workflow with our custom CLI.", icon: "terminal", bgClass: "bg-tertiary/10", text: "text-tertiary", href: "/dashboard/docs" },
+    { title: "Priority Support", desc: "Tickets respond in < 2 hours for Pro users.", icon: "live_help", bgClass: "bg-surface-container-highest", text: "text-on-surface", href: "/dashboard/support" },
   ];
 
   const activities = [
@@ -148,7 +149,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold text-on-surface">Engineering Resources</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {resources.map((res) => (
-              <div key={res.title} className="glass-card p-5 rounded-xl border border-white/5 flex items-start gap-4 hover:bg-primary/5 transition-colors cursor-pointer">
+              <Link href={res.href} key={res.title} className="glass-card p-5 rounded-xl border border-white/5 flex items-start gap-4 hover:bg-primary/5 transition-colors cursor-pointer block">
                 <div className={`p-2.5 rounded-lg ${res.bgClass} ${res.text}`}>
                   <span className="material-symbols-outlined text-[20px]">{res.icon}</span>
                 </div>
@@ -156,7 +157,7 @@ export default function DashboardPage() {
                   <h4 className="font-bold text-on-surface text-sm">{res.title}</h4>
                   <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{res.desc}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
