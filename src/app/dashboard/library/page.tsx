@@ -191,9 +191,9 @@ export default function LibraryPage() {
               {/* Header */}
               <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{selectedProject.category}</span>
-                  <h2 className="text-xl font-bold tracking-tight text-on-surface mt-1">{selectedProject.name}</h2>
-                  <p className="text-xs text-on-surface-variant mt-1">{selectedProject.description}</p>
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{selectedProject?.category}</span>
+                  <h2 className="text-xl font-bold tracking-tight text-on-surface mt-1">{selectedProject?.name}</h2>
+                  <p className="text-xs text-on-surface-variant mt-1">{selectedProject?.description}</p>
                 </div>
                 <button 
                   onClick={() => setSelectedProject(null)}
@@ -207,7 +207,7 @@ export default function LibraryPage() {
               <div className="space-y-2">
                 <span className="text-[10px] font-bold text-outline uppercase tracking-wider block">Template Preview Screenshots</span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {selectedProject.screenshots.map((src: string, i: number) => (
+                  {selectedProject?.screenshots?.map((src: string, i: number) => (
                     <div key={i} className="h-40 rounded-xl overflow-hidden border border-white/5">
                       <img className="w-full h-full object-cover" alt="Preview" src={src} />
                     </div>
@@ -221,7 +221,7 @@ export default function LibraryPage() {
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold text-outline uppercase tracking-wider block">Deployment Prerequisites</span>
                   <ul className="space-y-2 text-xs text-on-surface-variant">
-                    {selectedProject.prerequisites.map((req: string, i: number) => (
+                    {selectedProject?.prerequisites?.map((req: string, i: number) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="material-symbols-outlined text-primary text-sm shrink-0">check_circle</span>
                         <span>{req}</span>
@@ -234,7 +234,7 @@ export default function LibraryPage() {
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold text-outline uppercase tracking-wider block">Changelogs & History</span>
                   <div className="space-y-3">
-                    {selectedProject.changelog.map((log: any, i: number) => (
+                    {selectedProject?.changelog?.map((log: any, i: number) => (
                       <div key={i} className="text-xs space-y-1 p-3 rounded-xl bg-surface-container-high/30 border border-white/5">
                         <div className="flex justify-between items-center">
                           <span className="font-mono font-bold text-primary">{log.version}</span>
@@ -256,11 +256,11 @@ export default function LibraryPage() {
                   Close
                 </button>
                 <button 
-                  onClick={() => alert(`Downloading latest files for ${selectedProject.name}...`)}
+                  onClick={() => alert(`Downloading latest files for ${selectedProject?.name}...`)}
                   className="bg-primary text-on-primary px-4 py-2.5 rounded-xl text-xs font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span>
-                  Download {selectedProject.latest}
+                  Download {selectedProject?.latest}
                 </button>
               </div>
             </motion.div>

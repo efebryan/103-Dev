@@ -168,7 +168,7 @@ export default function OrdersPage() {
               <div className="flex justify-between items-start border-b border-white/5 pb-4">
                 <div>
                   <h2 className="text-xl font-bold tracking-tight text-on-surface">103 Dev Invoice</h2>
-                  <p className="text-[10px] font-mono text-primary mt-1">{selectedInvoice.id}</p>
+                  <p className="text-[10px] font-mono text-primary mt-1">{selectedInvoice?.id}</p>
                 </div>
                 <button 
                   onClick={() => setSelectedInvoice(null)}
@@ -187,18 +187,18 @@ export default function OrdersPage() {
                 </div>
                 <div>
                   <span className="text-[9px] uppercase text-outline font-bold">Invoice Details</span>
-                  <p className="text-on-surface-variant mt-1">Date: {selectedInvoice.date}</p>
-                  <p className="text-on-surface-variant">Method: {selectedInvoice.paymentMethod}</p>
+                  <p className="text-on-surface-variant mt-1">Date: {selectedInvoice?.date}</p>
+                  <p className="text-on-surface-variant">Method: {selectedInvoice?.paymentMethod}</p>
                 </div>
               </div>
 
               {/* Line Items */}
               <div className="border-t border-b border-white/5 py-4 space-y-2">
                 <span className="text-[9px] uppercase text-outline font-bold block mb-1">Purchased Items</span>
-                {selectedInvoice.products.map((item: string, i: number) => (
+                {selectedInvoice?.products?.map((item: string, i: number) => (
                   <div key={i} className="flex justify-between items-center text-xs">
                     <span className="text-on-surface font-medium">{item}</span>
-                    <span className="text-on-surface font-bold">{selectedInvoice.total}</span>
+                    <span className="text-on-surface font-bold">{selectedInvoice?.total}</span>
                   </div>
                 ))}
               </div>
@@ -206,7 +206,7 @@ export default function OrdersPage() {
               {/* Totals */}
               <div className="flex justify-between items-center border-b border-white/5 pb-4">
                 <span className="text-xs font-bold text-outline uppercase tracking-wider">Total Amount</span>
-                <span className="text-xl font-black text-primary">{selectedInvoice.total}</span>
+                <span className="text-xl font-black text-primary">{selectedInvoice?.total}</span>
               </div>
 
               {/* Actions */}
