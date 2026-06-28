@@ -68,6 +68,11 @@ export default function DashboardLayout({
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="pb-2 px-3">
+            <p className="text-[10px] font-bold text-outline uppercase tracking-widest">
+              Core Suite
+            </p>
+          </div>
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (

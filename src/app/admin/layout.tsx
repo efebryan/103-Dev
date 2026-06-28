@@ -8,11 +8,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [search, setSearch] = useState("");
 
-  const navigation = [
-    { name: "Dashboard", href: "/admin", icon: "dashboard" },
+  const operationsNav = [
+    { name: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
+    { name: "Orders", href: "/admin/dashboard/orders", icon: "shopping_cart" },
+    { name: "Licenses", href: "/admin/dashboard/licenses", icon: "verified_user" },
+  ];
+
+  const managementNav = [
     { name: "Users", href: "/admin/users", icon: "group" },
     { name: "Products", href: "/admin/products", icon: "shopping_bag" },
-    { name: "Transactions", href: "/admin/transactions", icon: "receipt_long" },
     { name: "Settings", href: "/admin/settings", icon: "settings" },
   ];
 
@@ -28,8 +32,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5">
-          {navigation.map((item) => {
+        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+          <div className="pb-2 px-4">
+            <p className="text-[9px] font-bold text-on-surface-variant/60 uppercase tracking-widest">
+              Operations
+            </p>
+          </div>
+          {operationsNav.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  isActive
+                    ? "bg-primary/10 text-primary border-l-2 border-primary pl-3.5"
+                    : "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                {item.name}
+              </Link>
+            );
+          })}
+
+          <div className="pt-6 pb-2 px-4">
+            <p className="text-[9px] font-bold text-on-surface-variant/60 uppercase tracking-widest">
+              Management
+            </p>
+          </div>
+          {managementNav.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
