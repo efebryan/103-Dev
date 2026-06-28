@@ -26,6 +26,7 @@ export default function AdminProductManagement() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [activeTab, setActiveTab] = useState<Product | null>(null);
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
   const initialProducts: Product[] = [
     { id: "PRD-101", title: "Horizon AI SaaS Boilerplate", category: "Templates", price: "$199.00", priceValue: 199, status: "Published", downloads: 412, rating: 5, version: "v2.2.4", stockStatus: "In Stock", publishedDate: "June 12, 2026", thumbnailGradient: "from-blue-600 to-indigo-900" },
@@ -244,25 +245,46 @@ export default function AdminProductManagement() {
                       <span className="text-outline">Version: </span>
                       <span className="font-mono text-primary font-semibold">{p.version}</span>
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <span className="text-outline">Rating: </span>
                       <span className="text-amber-400 font-bold">★ {p.rating || "N/A"}</span>
-                    </div>
-                    <div>
-                      <span className="text-outline">Stock: </span>
-                      <span className={`font-semibold ${p.stockStatus === "In Stock" ? "text-primary" : "text-amber-400"}`}>{p.stockStatus}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="p-5 border-t border-white/5 bg-white/1.5 flex justify-between items-center">
+              <div className="p-5 border-t border-white/5 bg-white/1.5 flex justify-between items-center relative">
                 <span className="text-sm font-black text-on-surface">{p.price}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => setActiveTab(p)} className="p-1 rounded bg-white/5 hover:bg-white/10 text-primary transition-colors cursor-pointer inline-flex items-center justify-center" title="View details"><span className="material-symbols-outlined text-[16px]">visibility</span></button>
-                  <button onClick={() => handleDuplicateProduct(p)} className="p-1 rounded bg-white/5 hover:bg-white/10 text-primary transition-colors cursor-pointer inline-flex items-center justify-center" title="Duplicate product"><span className="material-symbols-outlined text-[16px]">content_copy</span></button>
-                  <button onClick={() => handleArchiveProduct(p.id)} className="p-1 rounded bg-white/5 hover:bg-white/10 text-primary transition-colors cursor-pointer inline-flex items-center justify-center" title="Archive product"><span className="material-symbols-outlined text-[16px]">archive</span></button>
-                  <button onClick={() => handleDeleteProduct(p.id)} className="p-1 rounded bg-white/5 hover:bg-white/10 text-error transition-colors cursor-pointer inline-flex items-center justify-center" title="Delete product"><span className="material-symbols-outlined text-[16px]">delete</span></button>
+                <div className="relative">
+                  <button 
+                    onClick={() => setActiveDropdownId(activeDropdownId === p.id ? null : p.id)}
+                    className="p-1 rounded bg-white/5 hover:bg-white/10 text-on-surface transition-colors cursor-pointer inline-flex items-center justify-center"
+                    title="Actions"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                  </button>
+                  {activeDropdownId === p.id && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setActiveDropdownId(null)} />
+                      <div className="absolute right-0 bottom-full mb-2 bg-surface-container-high border border-white/10 rounded-xl shadow-xl py-1 w-32 z-20 text-xs">
+                        <button onClick={() => { setActiveTab(p); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                          <span className="material-symbols-outlined text-sm">visibility</span> View
+                        </button>
+                        <button onClick={() => { alert(`Editing product ${p.id}`); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                          <span className="material-symbols-outlined text-sm">edit</span> Edit
+                        </button>
+                        <button onClick={() => { handleDuplicateProduct(p); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                          <span className="material-symbols-outlined text-sm">content_copy</span> Duplicate
+                        </button>
+                        <button onClick={() => { handleArchiveProduct(p.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                          <span className="material-symbols-outlined text-sm">archive</span> Archive
+                        </button>
+                        <button onClick={() => { handleDeleteProduct(p.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-error font-semibold flex items-center gap-2 cursor-pointer border-t border-white/5">
+                          <span className="material-symbols-outlined text-sm text-error">delete</span> Delete
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -290,7 +312,6 @@ export default function AdminProductManagement() {
                   <th className="py-4 px-6">Status</th>
                   <th className="py-4 px-6 text-center">Downloads</th>
                   <th className="py-4 px-6">Version</th>
-                  <th className="py-4 px-6">Stock Status</th>
                   <th className="py-4 px-6">Published Date</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
@@ -326,28 +347,45 @@ export default function AdminProductManagement() {
                     </td>
                     <td className="py-4 px-6 text-center font-bold text-on-surface">{p.downloads}</td>
                     <td className="py-4 px-6 font-mono text-xs font-semibold text-primary">{p.version}</td>
-                    <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                        p.stockStatus === "In Stock" ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" :
-                        p.stockStatus === "Pre-order" ? "bg-amber-400/10 text-amber-400 border-amber-400/20" :
-                        "bg-rose-400/10 text-rose-400 border-rose-400/20"
-                      }`}>
-                        {p.stockStatus}
-                      </span>
-                    </td>
                     <td className="py-4 px-6 text-on-surface-variant font-medium">{p.publishedDate}</td>
-                    <td className="py-4 px-6 text-right space-x-1.5 whitespace-nowrap">
-                      <button onClick={() => setActiveTab(p)} className="text-primary hover:underline font-semibold cursor-pointer text-xs">View</button>
-                      <button onClick={() => alert(`Opening product editor dialog for ${p.id}`)} className="text-primary hover:underline font-semibold cursor-pointer text-xs">Edit</button>
-                      <button onClick={() => handleDuplicateProduct(p)} className="text-primary hover:underline font-semibold cursor-pointer text-xs">Duplicate</button>
-                      <button onClick={() => handleArchiveProduct(p.id)} className="text-primary hover:underline font-semibold cursor-pointer text-xs">Archive</button>
-                      <button onClick={() => handleDeleteProduct(p.id)} className="text-error hover:underline font-semibold cursor-pointer text-xs">Delete</button>
+                    <td className="py-4 px-6 text-right relative">
+                      <div className="inline-block text-left">
+                        <button 
+                          onClick={() => setActiveDropdownId(activeDropdownId === p.id ? null : p.id)}
+                          className="p-1 rounded bg-white/5 hover:bg-white/10 text-on-surface transition-colors cursor-pointer inline-flex items-center justify-center"
+                          title="Actions"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                        </button>
+                        {activeDropdownId === p.id && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setActiveDropdownId(null)} />
+                            <div className="absolute right-0 mt-2 bg-surface-container-high border border-white/10 rounded-xl shadow-xl py-1 w-32 z-20 text-xs text-left">
+                              <button onClick={() => { setActiveTab(p); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                                <span className="material-symbols-outlined text-sm">visibility</span> View
+                              </button>
+                              <button onClick={() => { alert(`Editing product ${p.id}`); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                                <span className="material-symbols-outlined text-sm">edit</span> Edit
+                              </button>
+                              <button onClick={() => { handleDuplicateProduct(p); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                                <span className="material-symbols-outlined text-sm">content_copy</span> Duplicate
+                              </button>
+                              <button onClick={() => { handleArchiveProduct(p.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-on-surface font-semibold flex items-center gap-2 cursor-pointer">
+                                <span className="material-symbols-outlined text-sm">archive</span> Archive
+                              </button>
+                              <button onClick={() => { handleDeleteProduct(p.id); setActiveDropdownId(null); }} className="w-full text-left px-4 py-2 hover:bg-white/5 text-error font-semibold flex items-center gap-2 cursor-pointer border-t border-white/5">
+                                <span className="material-symbols-outlined text-sm text-error">delete</span> Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {processedProducts.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="py-8 text-center text-on-surface-variant font-medium">
+                    <td colSpan={10} className="py-8 text-center text-on-surface-variant font-medium">
                       No products registered matching criteria.
                     </td>
                   </tr>

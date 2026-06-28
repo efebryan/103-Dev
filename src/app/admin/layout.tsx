@@ -19,6 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const managementNav = [
     { name: "Users", href: "/admin/dashboard/users", icon: "group" },
     { name: "Products", href: "/admin/dashboard/products", icon: "shopping_bag" },
+    { name: "Add/Edit Product", href: "/admin/dashboard/add-edit", icon: "edit_note" },
     { name: "Settings", href: "/admin/dashboard/settings", icon: "settings" },
   ];
 
