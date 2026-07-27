@@ -9,7 +9,7 @@ export default function UpgradePage() {
   const plans = [
     {
       name: "Starter Bundle",
-      price: "$0",
+      price: "₦0",
       description: "Perfect for testing and learning local boilerplates.",
       features: [
         "Access to 3 basic starter templates",
@@ -23,7 +23,7 @@ export default function UpgradePage() {
     },
     {
       name: "Commercial Pro",
-      price: billingCycle === "monthly" ? "$199" : "$159",
+      price: billingCycle === "monthly" ? "₦199" : "₦159",
       description: "Everything you need to launch elite client websites and SaaS projects.",
       features: [
         "Access to all 50+ premium developer assets",

@@ -73,7 +73,7 @@ export default function WishlistPage() {
                     <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed line-clamp-2">{t?.description ?? ""}</p>
                   </div>
                   <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
-                    <span className="text-base font-extrabold text-on-surface">${Number(t?.price ?? 0).toFixed(2)}</span>
+                    <span className="text-base font-extrabold text-on-surface">₦{Number(t?.price ?? 0).toFixed(2)}</span>
                     <button className="bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer">
                       Buy Now
                     </button>

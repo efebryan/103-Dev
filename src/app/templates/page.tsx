@@ -323,7 +323,7 @@ export default function TemplatesPage() {
                           <h3 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
                             {template.title}
                           </h3>
-                          <span className="text-primary font-bold text-lg shrink-0">${template.price}</span>
+                          <span className="text-primary font-bold text-lg shrink-0">₦{template.price}</span>
                         </div>
                         <p className="text-xs text-on-surface-variant/80 line-clamp-2 leading-relaxed">
                           {template.description}

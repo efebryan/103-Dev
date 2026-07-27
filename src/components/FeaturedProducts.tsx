@@ -74,7 +74,7 @@ export default function FeaturedProducts() {
                   <h3 className="text-lg font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
                     {product.title}
                   </h3>
-                  <span className="text-primary font-bold text-lg">${product.price}</span>
+                  <span className="text-primary font-bold text-lg">₦{product.price}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-6">
                   {product.tags.map((tag) => (

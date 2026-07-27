@@ -31,7 +31,7 @@ export default function OrdersPage() {
     : orders.filter(o => o.order_status === filterStatus);
 
   const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const fmtAmount = (n: number) => `$${Number(n).toFixed(2)}`;
+  const fmtAmount = (n: number) => `₦${Number(n).toFixed(2)}`;
 
   return (
     <div className="space-y-8">

@@ -1,15 +1,67 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function AddEditProductPage() {
+  const router = useRouter();
+  
+  // State variables for all product fields
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [fullDescription, setFullDescription] = useState("");
+  const [features, setFeatures] = useState("");
+  const [requirements, setRequirements] = useState("");
+  const [installationGuide, setInstallationGuide] = useState("");
+  const [docsUrl, setDocsUrl] = useState("");
+  const [price, setPrice] = useState("");
+  const [category, setCategory] = useState("Templates");
+  const [version, setVersion] = useState("");
+  
+  // Existing state
   const [isFeatured, setIsFeatured] = useState(false);
   const [visibility, setVisibility] = useState("Draft");
   const [licenseOption, setLicenseOption] = useState("Single Site");
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Product saved successfully! All fields validated.");
+    setSaving(true);
+    
+    try {
+      const supabase = createClient();
+      
+      const parsedPrice = parseFloat(price.replace(/[^0-9.]/g, ''));
+      
+      const { data, error } = await supabase.from("products").insert({
+        title,
+        slug,
+        short_description: shortDescription,
+        full_description: fullDescription,
+        price: isNaN(parsedPrice) ? 0 : parsedPrice,
+        category,
+        stock_status: "in_stock",
+        status: visibility.toLowerCase(),
+        version,
+        features,
+        requirements,
+        installation_guide: installationGuide,
+        docs_url: docsUrl
+      });
+
+      if (error) {
+        alert("Error saving product: " + error.message);
+      } else {
+        alert("Product saved successfully!");
+        router.push("/admin/dashboard/products");
+      }
+    } catch (err: any) {
+      alert("Unexpected error: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -23,16 +75,19 @@ export default function AddEditProductPage() {
         <div className="flex gap-3">
           <button 
             type="button" 
-            onClick={() => alert("Changes discarded.")}
+            onClick={() => {
+              if(confirm("Discard changes?")) router.push("/admin/dashboard/products");
+            }}
             className="bg-surface-container-high border border-outline-variant px-5 py-2.5 rounded-xl text-xs font-semibold hover:bg-surface-bright transition-colors text-on-surface cursor-pointer"
           >
             Discard
           </button>
           <button 
             type="submit"
-            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-xs font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+            disabled={saving}
+            className="bg-primary text-on-primary px-5 py-2.5 rounded-xl text-xs font-semibold hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           >
-            Publish Product
+            {saving ? "Saving..." : "Publish Product"}
           </button>
         </div>
       </div>
@@ -52,20 +107,20 @@ export default function AddEditProductPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-outline font-semibold mb-1">Product Title</label>
-                  <input type="text" placeholder="e.g. Horizon AI SaaS Boilerplate" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Horizon AI SaaS Boilerplate" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
                   <label className="block text-outline font-semibold mb-1">Slug</label>
-                  <input type="text" placeholder="e.g. horizon-ai-saas-boilerplate" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <input type="text" value={slug} onChange={e => setSlug(e.target.value)} placeholder="e.g. horizon-ai-saas-boilerplate" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
               </div>
               <div>
                 <label className="block text-outline font-semibold mb-1">Short Description</label>
-                <input type="text" placeholder="A brief one-liner summary of the product..." required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="text" value={shortDescription} onChange={e => setShortDescription(e.target.value)} placeholder="A brief one-liner summary of the product..." required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
               <div>
                 <label className="block text-outline font-semibold mb-1">Full Description</label>
-                <textarea rows={6} placeholder="Describe the template's technical details, features, structure..." required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <textarea rows={6} value={fullDescription} onChange={e => setFullDescription(e.target.value)} placeholder="Describe the template's technical details, features, structure..." required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" />
               </div>
             </div>
           </div>
@@ -79,21 +134,21 @@ export default function AddEditProductPage() {
             <div className="space-y-4 text-xs">
               <div>
                 <label className="block text-outline font-semibold mb-1">Key Features</label>
-                <input type="text" placeholder="e.g. Next.js 16, Tailwind CSS, Stripe integration (comma separated)" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="text" value={features} onChange={e => setFeatures(e.target.value)} placeholder="e.g. Next.js 16, Tailwind CSS, Stripe integration (comma separated)" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-outline font-semibold mb-1">Prerequisites & Requirements</label>
-                  <textarea rows={3} placeholder="Node.js 18+, Docker runtime, PostgreSQL database..." className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <textarea rows={3} value={requirements} onChange={e => setRequirements(e.target.value)} placeholder="Node.js 18+, Docker runtime, PostgreSQL database..." className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
                 <div>
                   <label className="block text-outline font-semibold mb-1">Installation Guide</label>
-                  <textarea rows={3} placeholder="1. npm install\n2. configure .env\n3. npm run dev" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
+                  <textarea rows={3} value={installationGuide} onChange={e => setInstallationGuide(e.target.value)} placeholder="1. npm install\n2. configure .env\n3. npm run dev" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
                 </div>
               </div>
               <div>
                 <label className="block text-outline font-semibold mb-1">Online Documentation URL</label>
-                <input type="url" placeholder="https://docs.103.dev/products/..." className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="url" value={docsUrl} onChange={e => setDocsUrl(e.target.value)} placeholder="https://docs.103.dev/products/..." className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
             </div>
           </div>
@@ -165,12 +220,12 @@ export default function AddEditProductPage() {
             <h3 className="text-base font-bold text-on-surface border-b border-white/5 pb-2">Pricing Setup</h3>
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-outline font-semibold mb-1">Regular Price (USD)</label>
-                <input type="text" placeholder="e.g. $199.00" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <label className="block text-outline font-semibold mb-1">Regular Price</label>
+                <input type="text" value={price} onChange={e => setPrice(e.target.value)} placeholder="e.g. 199.00" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
               <div>
-                <label className="block text-outline font-semibold mb-1">Sale Price (USD)</label>
-                <input type="text" placeholder="e.g. $149.00" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
+                <label className="block text-outline font-semibold mb-1">Sale Price</label>
+                <input type="text" placeholder="e.g. 149.00" className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
               <div>
                 <label className="block text-outline font-semibold mb-1">License Options</label>
@@ -193,7 +248,7 @@ export default function AddEditProductPage() {
             <div className="space-y-4 text-xs">
               <div>
                 <label className="block text-outline font-semibold mb-1">Product Category</label>
-                <select className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary">
+                <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface focus:outline-none focus:ring-1 focus:ring-primary">
                   <option>Templates</option>
                   <option>Components</option>
                   <option>Backend</option>
@@ -212,7 +267,7 @@ export default function AddEditProductPage() {
             <div className="space-y-4 text-xs">
               <div>
                 <label className="block text-outline font-semibold mb-1">Current Version</label>
-                <input type="text" placeholder="e.g. v1.0.0" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="text" value={version} onChange={e => setVersion(e.target.value)} placeholder="e.g. v1.0.0" required className="w-full bg-surface-container-lowest border border-outline-variant p-3 rounded-xl text-on-surface font-mono focus:outline-none focus:ring-1 focus:ring-primary" />
               </div>
               <div>
                 <label className="block text-outline font-semibold mb-1">Release Notes</label>

@@ -30,7 +30,7 @@ export default function AdminOrderManagement() {
   });
 
   const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const fmtAmt = (n: number) => `$${Number(n).toFixed(2)}`;
+  const fmtAmt = (n: number) => `₦${Number(n).toFixed(2)}`;
 
   const payBadge: Record<string, string> = {
     paid: "bg-emerald-400/10 text-emerald-400 border-emerald-400/20",

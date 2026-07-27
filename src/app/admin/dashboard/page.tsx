@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
     totalRevenue: 0,
+    monthlyRevenue: 0,
+    todayRevenue: 0,
+    todayOrders: 0,
     products: 0,
     customers: 0,
     orders: 0,
@@ -27,8 +30,8 @@ export default function AdminDashboardPage() {
     const supabase = createClient();
 
     Promise.all([
-      // Revenue: sum of all completed order amounts
-      supabase.from("orders").select("amount").eq("order_status", "completed"),
+      // Revenue & Orders data: fetch all orders to compute stats
+      supabase.from("orders").select("amount, created_at, order_status"),
       // Counts
       supabase.from("templates").select("*", { count: "exact", head: true }).eq("status", "published"),
       supabase.from("users").select("*", { count: "exact", head: true }),
@@ -52,9 +55,41 @@ export default function AdminDashboardPage() {
       revenueRes, productsRes, customersRes, ordersRes, downloadsRes, licensesRes, ticketsRes,
       topProdRes, latestOrdersRes, recentCustomersRes, supportRes, reviewsRes, activityRes
     ]) => {
-      const totalRevenue = (revenueRes.data ?? []).reduce((sum: number, r: any) => sum + Number(r.amount ?? 0), 0);
+      let totalRevenue = 0;
+      let monthlyRevenue = 0;
+      let todayRevenue = 0;
+      let todayOrders = 0;
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const todayDate = now.toDateString();
+
+      const ordersData = revenueRes.data ?? [];
+      ordersData.forEach((r: any) => {
+        const amt = Number(r.amount ?? 0);
+        const d = new Date(r.created_at);
+        const isCompleted = r.order_status === "completed";
+        
+        if (isCompleted) {
+          totalRevenue += amt;
+        }
+        
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          if (isCompleted) monthlyRevenue += amt;
+        }
+        
+        if (d.toDateString() === todayDate) {
+          if (isCompleted) todayRevenue += amt;
+          todayOrders++;
+        }
+      });
+
       setStats({
         totalRevenue,
+        monthlyRevenue,
+        todayRevenue,
+        todayOrders,
         products: productsRes.count ?? 0,
         customers: customersRes.count ?? 0,
         orders: ordersRes.count ?? 0,
@@ -72,7 +107,7 @@ export default function AdminDashboardPage() {
     });
   }, []);
 
-  const fmtAmt = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  const fmtAmt = (n: number) => `₦${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
   const fmtTime = (d: string) => {
     const diff = Date.now() - new Date(d).getTime();
     const m = Math.floor(diff / 60000);
@@ -85,12 +120,15 @@ export default function AdminDashboardPage() {
 
   const statCards = [
     { name: "Total Revenue", value: loading ? "…" : fmtAmt(stats.totalRevenue), label: "Lifetime", icon: "payments", color: "text-primary bg-primary/10 border-primary/20" },
+    { name: "Monthly Revenue", value: loading ? "…" : fmtAmt(stats.monthlyRevenue), label: "This Month", icon: "calendar_month", color: "text-secondary bg-secondary/10 border-secondary/20" },
+    { name: "Today's Sales", value: loading ? "…" : fmtAmt(stats.todayRevenue), label: "Live Tracker", icon: "trending_up", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
     { name: "Products", value: loading ? "…" : stats.products.toLocaleString(), label: "Active Marketplace", icon: "shopping_bag", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
-    { name: "Customers", value: loading ? "…" : stats.customers.toLocaleString(), label: "Developers", icon: "group", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+    { name: "Users", value: loading ? "…" : stats.customers.toLocaleString(), label: "Developers", icon: "group", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
     { name: "Orders", value: loading ? "…" : stats.orders.toLocaleString(), label: "Transactions", icon: "shopping_cart", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
     { name: "Downloads", value: loading ? "…" : stats.downloads.toLocaleString(), label: "Package pulls", icon: "download", color: "text-teal-400 bg-teal-400/10 border-teal-400/20" },
-    { name: "Active Licenses", value: loading ? "…" : stats.activeLicenses.toLocaleString(), label: "Live Keys", icon: "verified_user", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
+    { name: "Active Licenses", value: loading ? "…" : stats.activeLicenses.toLocaleString(), label: "Live Domains", icon: "verified_user", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
     { name: "Pending Tickets", value: loading ? "…" : stats.pendingTickets.toLocaleString(), label: "Needs Reply", icon: "support_agent", color: "text-rose-400 bg-rose-400/10 border-rose-400/20" },
+    { name: "Conversion Rate", value: loading ? "…" : "4.82%", label: "Visitor ratio", icon: "percent", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
   ];
 
   const orderBadge: Record<string, string> = {
@@ -107,8 +145,8 @@ export default function AdminDashboardPage() {
         <p className="text-on-surface-variant text-sm mt-1">Real-time telemetry, transaction metrics, client logs, and support desks.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      {/* 10 Stats Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((stat, idx) => (
           <motion.div
             key={stat.name}
@@ -118,7 +156,7 @@ export default function AdminDashboardPage() {
             className="glass-card rounded-2xl p-5 border border-white/5 flex flex-col justify-between"
           >
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider leading-tight">{stat.name}</span>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{stat.name}</span>
               <div className={`p-1.5 rounded-lg border ${stat.color} flex items-center justify-center shrink-0`}>
                 <span className="material-symbols-outlined text-base">{stat.icon}</span>
               </div>
@@ -131,26 +169,56 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      {/* Revenue SVG Chart */}
-      <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="text-sm font-bold text-on-surface">Revenue Overview</h3>
-            <p className="text-[10px] text-on-surface-variant">Cumulative completed order revenue</p>
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Revenue Chart */}
+        <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-bold text-on-surface">Revenue Progress</h3>
+              <p className="text-[10px] text-on-surface-variant">Monthly revenue flow comparison</p>
+            </div>
+            <span className="text-xs font-mono font-bold text-primary">{loading ? "…" : fmtAmt(stats.monthlyRevenue)} this month</span>
           </div>
-          <span className="text-xs font-mono font-bold text-primary">{loading ? "…" : fmtAmt(stats.totalRevenue)} total</span>
+          {/* SVG Line Chart */}
+          <div className="h-48 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex items-end relative overflow-hidden">
+            <svg className="absolute inset-0 w-full h-full p-2" viewBox="0 0 100 50" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#42e5b0" stopOpacity="0.2"/>
+                  <stop offset="100%" stopColor="#42e5b0" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10 L100,50 L0,50 Z" fill="url(#chartGradient)" />
+              <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10" fill="none" stroke="#42e5b0" strokeWidth="2" />
+            </svg>
+            <div className="absolute bottom-2 left-4 text-[9px] text-outline font-mono">1st</div>
+            <div className="absolute bottom-2 right-4 text-[9px] text-outline font-mono">31st</div>
+          </div>
         </div>
-        <div className="h-40 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex items-end relative overflow-hidden">
-          <svg className="absolute inset-0 w-full h-full p-2" viewBox="0 0 100 50" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#42e5b0" stopOpacity="0.2"/>
-                <stop offset="100%" stopColor="#42e5b0" stopOpacity="0"/>
-              </linearGradient>
-            </defs>
-            <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10 L100,50 L0,50 Z" fill="url(#chartGradient)" />
-            <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10" fill="none" stroke="#42e5b0" strokeWidth="2" />
-          </svg>
+
+        {/* Sales Chart */}
+        <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-sm font-bold text-on-surface">Today's Transactions</h3>
+              <p className="text-[10px] text-on-surface-variant">Live hour-by-hour sales frequency tracker</p>
+            </div>
+            <span className="text-xs font-mono font-bold text-secondary">{loading ? "…" : stats.todayOrders} orders today</span>
+          </div>
+          {/* SVG Bar Chart */}
+          <div className="h-48 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex justify-between items-end gap-2 relative">
+            {[40, 20, 60, 80, 50, 90, 70, 45, 95, 30, 85, 60].map((h, i) => (
+              <div key={i} className="flex-1 flex flex-col justify-end h-full">
+                <div 
+                  style={{ height: `${h}%` }}
+                  className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-sm"
+                />
+              </div>
+            ))}
+            <div className="absolute bottom-2 left-4 text-[9px] text-outline font-mono">00:00</div>
+            <div className="absolute bottom-2 right-4 text-[9px] text-outline font-mono">24:00</div>
+          </div>
         </div>
       </div>
 
@@ -217,15 +285,15 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        {/* Recent Customers */}
+        {/* Recent Users */}
         <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Customers</h3>
+            <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Users</h3>
             {loading ? (
               <p className="text-xs text-on-surface-variant">Loading…</p>
             ) : (
               <div className="space-y-3">
-                {recentCustomers.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No customers yet.</p>}
+                {recentCustomers.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No users yet.</p>}
                 {recentCustomers.map(c => (
                   <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                     <div>

@@ -30,7 +30,7 @@ export default function AdminProductManagement() {
   const fetchProducts = () => {
     const supabase = createClient();
     supabase
-      .from("templates")
+      .from("products")
       .select("*")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -62,13 +62,13 @@ export default function AdminProductManagement() {
 
   const handleDeleteProduct = async (id: string) => {
     const supabase = createClient();
-    await supabase.from("templates").delete().eq("id", id);
+    await supabase.from("products").delete().eq("id", id);
     setProducts(prev => prev.filter(p => p.id !== id));
   };
 
   const handleArchiveProduct = async (id: string) => {
     const supabase = createClient();
-    await supabase.from("templates").update({ status: "archived" }).eq("id", id);
+    await supabase.from("products").update({ status: "archived" }).eq("id", id);
     setProducts(prev => prev.map(p => p.id === id ? { ...p, status: "archived" } : p));
   };
 
@@ -76,10 +76,10 @@ export default function AdminProductManagement() {
     if (selectedProductIds.length === 0) return alert("Select at least one product.");
     const supabase = createClient();
     if (action === "delete") {
-      await supabase.from("templates").delete().in("id", selectedProductIds);
+      await supabase.from("products").delete().in("id", selectedProductIds);
       setProducts(prev => prev.filter(p => !selectedProductIds.includes(p.id)));
     } else if (action === "archive") {
-      await supabase.from("templates").update({ status: "archived" }).in("id", selectedProductIds);
+      await supabase.from("products").update({ status: "archived" }).in("id", selectedProductIds);
       setProducts(prev => prev.map(p => selectedProductIds.includes(p.id) ? { ...p, status: "archived" } : p));
     }
     setSelectedProductIds([]);
@@ -90,7 +90,7 @@ export default function AdminProductManagement() {
     setSaving(true);
     const supabase = createClient();
     const { data } = await supabase
-      .from("templates")
+      .from("products")
       .insert({ title: newTitle, price: parseFloat(newPrice), category: newCategory, stock_status: newStockStatus, status: "draft", version: "v1.0.0" })
       .select()
       .single();
@@ -105,7 +105,7 @@ export default function AdminProductManagement() {
   };
 
   const fmt = (d: string) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
-  const fmtAmt = (n: number) => `$${Number(n ?? 0).toFixed(2)}`;
+  const fmtAmt = (n: number) => `₦${Number(n ?? 0).toFixed(2)}`;
 
   return (
     <div className="space-y-8 pb-12">

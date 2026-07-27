@@ -9,7 +9,7 @@ export async function signIn(formData: FormData) {
   const password = formData.get('password') as string
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data: authData, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -18,8 +18,20 @@ export async function signIn(formData: FormData) {
     return { error: error.message }
   }
 
+  // Check if user is an admin
+  const { data: userData } = await supabase
+    .from('users')
+    .select('is_admin')
+    .eq('id', authData.user.id)
+    .single()
+
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  
+  if (userData?.is_admin) {
+    redirect('/admin/dashboard')
+  } else {
+    redirect('/dashboard')
+  }
 }
 
 export async function signUp(formData: FormData) {

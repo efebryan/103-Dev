@@ -239,14 +239,16 @@ export default function ProfilePage() {
               {[
                 { label: "Email", value: profile?.email ?? "—", icon: "mail" },
                 { label: "Account Status", value: profile?.account_status ?? "active", icon: "verified_user" },
-                { label: "Role", value: profile?.is_admin ? "Administrator" : "Customer", icon: "badge" },
+                { label: "Role", value: profile?.is_admin ? "Administrator" : "User", icon: "badge" },
                 { label: "Member Since", value: profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "—", icon: "calendar_today" },
               ].map(item => (
                 <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl bg-surface-container-high/30 border border-white/5">
                   <span className="material-symbols-outlined text-outline text-base shrink-0 mt-0.5">{item.icon}</span>
                   <div>
                     <p className="text-[9px] text-outline uppercase font-bold">{item.label}</p>
-                    <p className="font-semibold text-on-surface mt-0.5 capitalize">{item.value}</p>
+                    <p className={`font-semibold text-on-surface mt-0.5 ${item.label === "Email" ? "lowercase font-mono text-[11px]" : "capitalize"}`}>
+                      {item.label === "Email" ? (item.value ?? "—").toLowerCase() : item.value}
+                    </p>
                   </div>
                 </div>
               ))}

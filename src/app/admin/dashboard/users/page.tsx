@@ -10,16 +10,18 @@ export default function AdminUsersManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchUsers = async () => {
     const supabase = createClient();
-    supabase
+    const { data } = await supabase
       .from("users")
       .select("*")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setUsers(data ?? []);
-        setLoading(false);
-      });
+      .order("created_at", { ascending: false });
+    setUsers(data ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
   const handleStatusToggle = async (id: string, current: string) => {
@@ -30,7 +32,7 @@ export default function AdminUsersManagement() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!confirm(`Permanently delete user ${id}?`)) return;
+    if (!confirm(`Permanently delete this user account?`)) return;
     const supabase = createClient();
     await supabase.from("users").delete().eq("id", id);
     setUsers(prev => prev.filter(u => u.id !== id));
@@ -92,7 +94,6 @@ export default function AdminUsersManagement() {
                 <tr className="border-b border-white/5 bg-surface-container-low/50 text-on-surface-variant text-[11px] uppercase font-semibold tracking-wider">
                   <th className="py-4 px-6">User</th>
                   <th className="py-4 px-6">Username</th>
-                  <th className="py-4 px-6">Email</th>
                   <th className="py-4 px-6">Country</th>
                   <th className="py-4 px-6">Joined</th>
                   <th className="py-4 px-6">Status</th>
@@ -104,37 +105,38 @@ export default function AdminUsersManagement() {
                   <tr key={user.id} className="hover:bg-surface-container-high/20 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 select-none">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 select-none overflow-hidden border border-white/5">
                           {user.avatar_url
-                            ? <img src={user.avatar_url} className="w-full h-full rounded-full object-cover" alt={user.full_name} />
+                            ? <img src={user.avatar_url} className="w-full h-full object-cover" alt={user.full_name} />
                             : initials(user.full_name)}
                         </div>
                         <div>
-                          <p className="font-bold">{user.full_name ?? "—"}</p>
-                          <span className="text-[10px] text-outline font-mono">{user.id.slice(0, 8)}</span>
+                          <p className="font-bold text-on-surface">{user.full_name ?? "—"}</p>
+                          <p className="text-[11px] text-on-surface-variant font-mono mt-0.5">{user.email ?? "—"}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-4 px-6 font-semibold text-primary">{user.username ? `@${user.username}` : "—"}</td>
-                    <td className="py-4 px-6 text-on-surface-variant font-medium">{user.email ?? "—"}</td>
                     <td className="py-4 px-6 text-on-surface-variant font-medium">{user.country ?? "—"}</td>
                     <td className="py-4 px-6 text-on-surface-variant font-medium">{fmt(user.created_at)}</td>
                     <td className="py-4 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadge[user.account_status ?? "active"] ?? statusBadge.active}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border capitalize ${statusBadge[user.account_status ?? "active"] ?? statusBadge.active}`}>
                         {user.account_status ?? "active"}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right space-x-1.5 whitespace-nowrap">
-                      <button onClick={() => setSelectedUser(user)} className="text-primary hover:underline font-semibold cursor-pointer text-xs">View</button>
-                      <button onClick={() => handleStatusToggle(user.id, user.account_status ?? "active")} className="text-primary hover:underline font-semibold cursor-pointer text-xs">
-                        {(user.account_status ?? "active") === "active" ? "Suspend" : "Activate"}
+                    <td className="py-4 px-6 text-right">
+                      <button
+                        onClick={() => setSelectedUser(user)}
+                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-white/5 rounded-xl transition-colors cursor-pointer inline-flex items-center justify-center"
+                        title="User Actions"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">more_vert</span>
                       </button>
-                      <button onClick={() => handleDeleteUser(user.id)} className="text-error hover:underline font-semibold cursor-pointer text-xs">Delete</button>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={7} className="py-8 text-center text-on-surface-variant font-medium">No matching user records found.</td></tr>
+                  <tr><td colSpan={6} className="py-8 text-center text-on-surface-variant font-medium">No matching user records found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -150,7 +152,7 @@ export default function AdminUsersManagement() {
               <span className="material-symbols-outlined text-[20px]">close</span>
             </button>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg select-none shrink-0 overflow-hidden">
+              <div className="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg select-none shrink-0 overflow-hidden border border-white/10">
                 {selectedUser.avatar_url
                   ? <img src={selectedUser.avatar_url} className="w-full h-full object-cover" alt={selectedUser.full_name} />
                   : initials(selectedUser.full_name)}
@@ -158,25 +160,59 @@ export default function AdminUsersManagement() {
               <div>
                 <h3 className="text-lg font-bold text-on-surface">{selectedUser.full_name ?? "—"}</h3>
                 <p className="text-xs text-primary font-mono font-semibold">{selectedUser.username ? `@${selectedUser.username}` : "—"}</p>
-                <p className="text-[9px] text-outline font-mono mt-0.5">ID: {selectedUser.id}</p>
+                <p className="text-xs text-on-surface-variant font-mono mt-0.5">{selectedUser.email ?? "—"}</p>
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4 text-xs bg-white/5 p-4 rounded-2xl border border-white/5">
               {[
                 ["Email", selectedUser.email ?? "—"],
                 ["Country", selectedUser.country ?? "—"],
                 ["Status", selectedUser.account_status ?? "active"],
                 ["Joined", fmt(selectedUser.created_at)],
-                ["Admin", selectedUser.is_admin ? "Yes" : "No"],
               ].map(([label, val]) => (
                 <div key={label}>
                   <p className="text-outline">{label}</p>
-                  <p className="font-semibold text-on-surface mt-0.5">{val}</p>
+                  <p className={`font-semibold text-on-surface mt-0.5 ${label === "Email" ? "lowercase font-mono text-[11px]" : "capitalize"}`}>
+                    {label === "Email" ? (val ?? "—").toLowerCase() : val}
+                  </p>
                 </div>
               ))}
             </div>
-            <div className="flex gap-3 justify-end text-xs pt-4 border-t border-white/5">
-              <button onClick={() => setSelectedUser(null)} className="bg-primary text-on-primary hover:brightness-110 px-5 py-2 rounded-xl font-semibold cursor-pointer">Close</button>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs pt-4 border-t border-white/5">
+              <button
+                onClick={() => {
+                  handleDeleteUser(selectedUser.id);
+                  setSelectedUser(null);
+                }}
+                className="bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 px-4 py-2.5 rounded-xl font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                Delete User
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    const next = (selectedUser.account_status ?? "active") === "active" ? "suspended" : "active";
+                    await handleStatusToggle(selectedUser.id, selectedUser.account_status ?? "active");
+                    setSelectedUser({ ...selectedUser, account_status: next });
+                  }}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-on-surface px-4 py-2.5 rounded-xl font-semibold cursor-pointer transition-colors flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    {(selectedUser.account_status ?? "active") === "active" ? "block" : "check_circle"}
+                  </span>
+                  {(selectedUser.account_status ?? "active") === "active" ? "Suspend Account" : "Activate Account"}
+                </button>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  className="bg-primary text-on-primary hover:brightness-110 px-5 py-2.5 rounded-xl font-semibold cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

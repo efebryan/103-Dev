@@ -168,7 +168,7 @@ export default function SettingsPage() {
               <div>
                 <p className="text-xs font-bold text-primary tracking-wide">ACTIVE SUBSCRIPTION</p>
                 <p className="text-lg font-bold text-on-surface mt-1">103 Dev Commercial Pro Plan</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">Renews automatically on July 25, 2026 ($199.00/month)</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Renews automatically on July 25, 2026 (₦199.00/month)</p>
               </div>
               <button className="bg-primary text-on-primary py-2 px-4 rounded-lg font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer">
                 Manage Billing
