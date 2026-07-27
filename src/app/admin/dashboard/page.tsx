@@ -1,71 +1,115 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AdminDashboardPage() {
-  const [copiedReview, setCopiedReview] = useState<number | null>(null);
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    products: 0,
+    customers: 0,
+    orders: 0,
+    downloads: 0,
+    activeLicenses: 0,
+    pendingTickets: 0,
+  });
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [latestOrders, setLatestOrders] = useState<any[]>([]);
+  const [recentCustomers, setRecentCustomers] = useState<any[]>([]);
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [latestReviews, setLatestReviews] = useState<any[]>([]);
+  const [activity, setActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { name: "Total Revenue", value: "$124,582.45", label: "Lifetime", icon: "payments", color: "text-primary bg-primary/10 border-primary/20" },
-    { name: "Monthly Revenue", value: "$18,231.89", label: "June 2026", icon: "calendar_month", color: "text-secondary bg-secondary/10 border-secondary/20" },
-    { name: "Today's Sales", value: "$1,849.00", label: "Live Tracker", icon: "trending_up", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-    { name: "Products", value: "84", label: "Active Marketplace", icon: "shopping_bag", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
-    { name: "Customers", value: "3,104", label: "Developers", icon: "group", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
-    { name: "Orders", value: "1,882", label: "Transactions", icon: "shopping_cart", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
-    { name: "Downloads", value: "14,582", label: "Package pulls", icon: "download", color: "text-teal-400 bg-teal-400/10 border-teal-400/20" },
-    { name: "Active Licenses", value: "2,492", label: "Live Domains", icon: "verified_user", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
-    { name: "Pending Tickets", value: "4", label: "Needs Reply", icon: "support_agent", color: "text-rose-400 bg-rose-400/10 border-rose-400/20" },
-    { name: "Conversion Rate", value: "4.82%", label: "Visitor ratio", icon: "percent", color: "text-orange-400 bg-orange-400/10 border-orange-400/20" },
+  useEffect(() => {
+    const supabase = createClient();
+
+    Promise.all([
+      // Revenue: sum of all completed order amounts
+      supabase.from("orders").select("amount").eq("order_status", "completed"),
+      // Counts
+      supabase.from("templates").select("*", { count: "exact", head: true }).eq("status", "published"),
+      supabase.from("users").select("*", { count: "exact", head: true }),
+      supabase.from("orders").select("*", { count: "exact", head: true }),
+      supabase.from("downloads").select("*", { count: "exact", head: true }),
+      supabase.from("licenses").select("*", { count: "exact", head: true }).eq("status", "active"),
+      supabase.from("support_tickets").select("*", { count: "exact", head: true }).eq("status", "open"),
+      // Top products by download_count
+      supabase.from("templates").select("id, title, category, price, download_count, rating_avg").eq("status", "published").order("download_count", { ascending: false }).limit(3),
+      // Latest orders
+      supabase.from("orders").select("id, amount, order_status, created_at, users(full_name), templates(title)").order("created_at", { ascending: false }).limit(5),
+      // Recent customers
+      supabase.from("users").select("id, full_name, email, created_at").order("created_at", { ascending: false }).limit(5),
+      // Open tickets
+      supabase.from("support_tickets").select("id, subject, priority, status, created_at, users(full_name, email)").eq("status", "open").order("created_at", { ascending: false }).limit(5),
+      // Latest reviews
+      supabase.from("reviews").select("id, rating, body, created_at, users(full_name), templates(title)").order("created_at", { ascending: false }).limit(4),
+      // Activity log
+      supabase.from("activity_log").select("id, action, created_at").order("created_at", { ascending: false }).limit(5),
+    ]).then(([
+      revenueRes, productsRes, customersRes, ordersRes, downloadsRes, licensesRes, ticketsRes,
+      topProdRes, latestOrdersRes, recentCustomersRes, supportRes, reviewsRes, activityRes
+    ]) => {
+      const totalRevenue = (revenueRes.data ?? []).reduce((sum: number, r: any) => sum + Number(r.amount ?? 0), 0);
+      setStats({
+        totalRevenue,
+        products: productsRes.count ?? 0,
+        customers: customersRes.count ?? 0,
+        orders: ordersRes.count ?? 0,
+        downloads: downloadsRes.count ?? 0,
+        activeLicenses: licensesRes.count ?? 0,
+        pendingTickets: ticketsRes.count ?? 0,
+      });
+      setTopProducts(topProdRes.data ?? []);
+      setLatestOrders(latestOrdersRes.data ?? []);
+      setRecentCustomers(recentCustomersRes.data ?? []);
+      setSupportTickets(supportRes.data ?? []);
+      setLatestReviews(reviewsRes.data ?? []);
+      setActivity(activityRes.data ?? []);
+      setLoading(false);
+    });
+  }, []);
+
+  const fmtAmt = (n: number) => `$${Number(n).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  const fmtTime = (d: string) => {
+    const diff = Date.now() - new Date(d).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return "Just now";
+    if (m < 60) return `${m} min${m > 1 ? "s" : ""} ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+  };
+
+  const statCards = [
+    { name: "Total Revenue", value: loading ? "…" : fmtAmt(stats.totalRevenue), label: "Lifetime", icon: "payments", color: "text-primary bg-primary/10 border-primary/20" },
+    { name: "Products", value: loading ? "…" : stats.products.toLocaleString(), label: "Active Marketplace", icon: "shopping_bag", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
+    { name: "Customers", value: loading ? "…" : stats.customers.toLocaleString(), label: "Developers", icon: "group", color: "text-purple-400 bg-purple-400/10 border-purple-400/20" },
+    { name: "Orders", value: loading ? "…" : stats.orders.toLocaleString(), label: "Transactions", icon: "shopping_cart", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+    { name: "Downloads", value: loading ? "…" : stats.downloads.toLocaleString(), label: "Package pulls", icon: "download", color: "text-teal-400 bg-teal-400/10 border-teal-400/20" },
+    { name: "Active Licenses", value: loading ? "…" : stats.activeLicenses.toLocaleString(), label: "Live Keys", icon: "verified_user", color: "text-cyan-400 bg-cyan-400/10 border-cyan-400/20" },
+    { name: "Pending Tickets", value: loading ? "…" : stats.pendingTickets.toLocaleString(), label: "Needs Reply", icon: "support_agent", color: "text-rose-400 bg-rose-400/10 border-rose-400/20" },
   ];
 
-  const topProducts = [
-    { title: "Horizon AI SaaS Boilerplate", category: "Templates", sales: 412, revenue: "$81,988.00" },
-    { title: "Nexus Admin Dashboard", category: "Components", sales: 882, revenue: "$43,218.00" },
-    { title: "Rust High-Performance Web Server", category: "Backend", sales: 254, revenue: "$32,766.00" },
-  ];
-
-  const latestOrders = [
-    { id: "ORD-7729", user: "Sarah Jenkins", product: "Horizon AI SaaS Boilerplate", amount: "$199.00", status: "Completed", time: "2 mins ago" },
-    { id: "ORD-6510", user: "Michael Chen", product: "Cyberpunk Tailwind UI Kit", amount: "$49.00", status: "Completed", time: "10 mins ago" },
-    { id: "ORD-4412", user: "Alex Rivera", product: "AI Chatbot API Gateway", amount: "$129.00", status: "Pending", time: "32 mins ago" },
-  ];
-
-  const recentCustomers = [
-    { name: "Bryan", email: "bryan@103.dev", purchases: 12, joined: "June 26" },
-    { name: "David Miller", email: "david@miller.co", purchases: 5, joined: "June 25" },
-    { name: "Jessica Taylor", email: "jessica@taylor.design", purchases: 2, joined: "June 24" },
-  ];
-
-  const supportTickets = [
-    { id: "TCK-881", subject: "Prisma schema migration build failure", user: "m.chen@tech.org", priority: "High", status: "Open" },
-    { id: "TCK-880", subject: "Stripe billing webhook double-charge check", user: "david@miller.co", priority: "Medium", status: "Open" },
-  ];
-
-  const latestReviews = [
-    { author: "Devon Webb", rating: 5, text: "The Horizon Boilerplate saved me at least 40 hours of setup. Super clean Next.js structure!", product: "Horizon AI SaaS" },
-    { author: "Alice Chen", rating: 5, text: "Incredibly fluid animations and gorgeous design system. Clients loved the Nexus dashboard layout.", product: "Nexus Admin Dashboard" },
-  ];
-
-  const activities = [
-    { text: "Sarah Jenkins purchased Horizon AI SaaS Boilerplate", time: "2 mins ago", color: "bg-primary" },
-    { text: "License key generated for Cyberpunk UI Kit", time: "10 mins ago", color: "bg-teal-400" },
-    { text: "Ticket TCK-881 created by Michael Chen", time: "15 mins ago", color: "bg-rose-400" },
-    { text: "Stripe payout processed successfully ($4,520.10)", time: "1 hour ago", color: "bg-emerald-400" },
-  ];
+  const orderBadge: Record<string, string> = {
+    completed: "bg-primary/10 text-primary border-primary/20",
+    pending: "bg-amber-400/10 text-amber-400 border-amber-400/20",
+    refunded: "bg-purple-400/10 text-purple-400 border-purple-400/20",
+    cancelled: "bg-rose-400/10 text-rose-400 border-rose-400/20",
+  };
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Welcome Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-on-surface">Console Dashboard</h1>
         <p className="text-on-surface-variant text-sm mt-1">Real-time telemetry, transaction metrics, client logs, and support desks.</p>
       </div>
 
-      {/* 10 Stats Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {stats.map((stat, idx) => (
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+        {statCards.map((stat, idx) => (
           <motion.div
             key={stat.name}
             initial={{ opacity: 0, y: 15 }}
@@ -74,7 +118,7 @@ export default function AdminDashboardPage() {
             className="glass-card rounded-2xl p-5 border border-white/5 flex flex-col justify-between"
           >
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{stat.name}</span>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider leading-tight">{stat.name}</span>
               <div className={`p-1.5 rounded-lg border ${stat.color} flex items-center justify-center shrink-0`}>
                 <span className="material-symbols-outlined text-base">{stat.icon}</span>
               </div>
@@ -87,80 +131,54 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Revenue Chart */}
-        <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-sm font-bold text-on-surface">Revenue Progress</h3>
-              <p className="text-[10px] text-on-surface-variant">Monthly revenue flow comparison (Jun 1 - Jun 28)</p>
-            </div>
-            <span className="text-xs font-mono font-bold text-primary">$18.2k this month</span>
+      {/* Revenue SVG Chart */}
+      <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-sm font-bold text-on-surface">Revenue Overview</h3>
+            <p className="text-[10px] text-on-surface-variant">Cumulative completed order revenue</p>
           </div>
-          {/* SVG Line Chart */}
-          <div className="h-48 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex items-end relative overflow-hidden">
-            <svg className="absolute inset-0 w-full h-full p-2" viewBox="0 0 100 50" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#42e5b0" stopOpacity="0.2"/>
-                  <stop offset="100%" stopColor="#42e5b0" stopOpacity="0"/>
-                </linearGradient>
-              </defs>
-              <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10 L100,50 L0,50 Z" fill="url(#chartGradient)" />
-              <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10" fill="none" stroke="#42e5b0" strokeWidth="2" />
-            </svg>
-            <div className="absolute bottom-2 left-4 text-[9px] text-outline font-mono">Jun 1</div>
-            <div className="absolute bottom-2 right-4 text-[9px] text-outline font-mono">Jun 28</div>
-          </div>
+          <span className="text-xs font-mono font-bold text-primary">{loading ? "…" : fmtAmt(stats.totalRevenue)} total</span>
         </div>
-
-        {/* Sales Chart */}
-        <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-sm font-bold text-on-surface">Today's Transactions</h3>
-              <p className="text-[10px] text-on-surface-variant">Live hour-by-hour sales frequency tracker</p>
-            </div>
-            <span className="text-xs font-mono font-bold text-secondary">38 orders today</span>
-          </div>
-          {/* SVG Bar Chart */}
-          <div className="h-48 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex justify-between items-end gap-2 relative">
-            {[40, 20, 60, 80, 50, 90, 70, 45, 95, 30, 85, 60].map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                <div 
-                  style={{ height: `${h}%` }}
-                  className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-sm"
-                />
-              </div>
-            ))}
-            <div className="absolute bottom-2 left-4 text-[9px] text-outline font-mono">00:00</div>
-            <div className="absolute bottom-2 right-4 text-[9px] text-outline font-mono">24:00</div>
-          </div>
+        <div className="h-40 w-full bg-[#010f1f]/50 rounded-2xl border border-white/5 p-4 flex items-end relative overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full p-2" viewBox="0 0 100 50" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#42e5b0" stopOpacity="0.2"/>
+                <stop offset="100%" stopColor="#42e5b0" stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10 L100,50 L0,50 Z" fill="url(#chartGradient)" />
+            <path d="M0,45 Q15,35 30,38 T60,20 T90,15 T100,10" fill="none" stroke="#42e5b0" strokeWidth="2" />
+          </svg>
         </div>
       </div>
 
-      {/* Detailed Tables Layout Grid */}
+      {/* 3-col table grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Top Selling Products */}
+        {/* Top Products */}
         <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Top Selling Products</h3>
-            <div className="space-y-3">
-              {topProducts.map((prod, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div>
-                    <p className="text-xs font-bold text-on-surface">{prod.title}</p>
-                    <span className="text-[9px] text-outline font-medium">{prod.category}</span>
+            {loading ? (
+              <p className="text-xs text-on-surface-variant">Loading…</p>
+            ) : (
+              <div className="space-y-3">
+                {topProducts.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No products yet.</p>}
+                {topProducts.map(prod => (
+                  <div key={prod.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div>
+                      <p className="text-xs font-bold text-on-surface line-clamp-1">{prod.title}</p>
+                      <span className="text-[9px] text-outline font-medium">{prod.category ?? "—"}</span>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-xs font-extrabold text-primary">{fmtAmt(prod.price)}</p>
+                      <span className="text-[9px] text-on-surface-variant font-mono">{prod.download_count ?? 0} dl</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-extrabold text-primary">{prod.revenue}</p>
-                    <span className="text-[9px] text-on-surface-variant font-mono">{prod.sales} sales</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
           <Link href="/admin/dashboard/products" className="text-[10px] text-primary hover:underline font-bold text-center block mt-4 border-t border-white/5 pt-4">
             View products catalog
@@ -171,20 +189,28 @@ export default function AdminDashboardPage() {
         <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Latest Orders</h3>
-            <div className="space-y-3">
-              {latestOrders.map((ord) => (
-                <div key={ord.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div>
-                    <span className="text-[9px] font-mono text-primary font-bold">{ord.id}</span>
-                    <p className="text-xs font-semibold text-on-surface mt-0.5">{ord.user}</p>
+            {loading ? (
+              <p className="text-xs text-on-surface-variant">Loading…</p>
+            ) : (
+              <div className="space-y-3">
+                {latestOrders.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No orders yet.</p>}
+                {latestOrders.map(ord => (
+                  <div key={ord.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div>
+                      <span className="text-[9px] font-mono text-primary font-bold">{ord.id.slice(0, 8).toUpperCase()}</span>
+                      <p className="text-xs font-semibold text-on-surface mt-0.5 line-clamp-1">{ord.users?.full_name ?? "—"}</p>
+                      <p className="text-[9px] text-outline line-clamp-1">{ord.templates?.title ?? "—"}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-xs font-black text-on-surface">{fmtAmt(ord.amount)}</p>
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] font-semibold border mt-1 ${orderBadge[ord.order_status] ?? "bg-white/5 text-outline border-white/10"}`}>
+                        {ord.order_status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-black text-on-surface">{ord.amount}</p>
-                    <span className="text-[9px] text-outline">{ord.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
           <Link href="/admin/dashboard/orders" className="text-[10px] text-primary hover:underline font-bold text-center block mt-4 border-t border-white/5 pt-4">
             View transactions portal
@@ -195,20 +221,22 @@ export default function AdminDashboardPage() {
         <div className="glass-card rounded-3xl p-6 border border-white/5 flex flex-col justify-between">
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Customers</h3>
-            <div className="space-y-3">
-              {recentCustomers.map((cust, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div>
-                    <p className="text-xs font-bold text-on-surface">{cust.name}</p>
-                    <span className="text-[9px] text-on-surface-variant font-mono">{cust.email}</span>
+            {loading ? (
+              <p className="text-xs text-on-surface-variant">Loading…</p>
+            ) : (
+              <div className="space-y-3">
+                {recentCustomers.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No customers yet.</p>}
+                {recentCustomers.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div>
+                      <p className="text-xs font-bold text-on-surface">{c.full_name ?? "—"}</p>
+                      <span className="text-[9px] text-on-surface-variant font-mono">{c.email ?? "—"}</span>
+                    </div>
+                    <span className="text-[9px] text-outline font-medium shrink-0 ml-2">{fmtTime(c.created_at)}</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-primary">{cust.purchases} buy</p>
-                    <span className="text-[9px] text-outline font-medium">{cust.joined}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
           <Link href="/admin/dashboard/users" className="text-[10px] text-primary hover:underline font-bold text-center block mt-4 border-t border-white/5 pt-4">
             View user profiles
@@ -216,130 +244,101 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Support, Reviews, Quick Actions & Feed Grid */}
+      {/* Support, Reviews, Actions, Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Support Tickets & Reviews Box */}
         <div className="space-y-8">
-          {/* Recent Support Tickets */}
+          {/* Support Tickets */}
           <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Support Tickets</h3>
-            <div className="space-y-3">
-              {supportTickets.map((ticket) => (
-                <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-mono text-rose-400 font-bold">{ticket.id}</span>
-                      <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[8px] bg-rose-400/10 text-rose-400 font-bold border border-rose-400/20">{ticket.priority}</span>
+            {loading ? <p className="text-xs text-on-surface-variant">Loading…</p> : (
+              <div className="space-y-3">
+                {supportTickets.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No open tickets. 🎉</p>}
+                {supportTickets.map(ticket => (
+                  <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-mono text-rose-400 font-bold">{ticket.id.slice(0, 8).toUpperCase()}</span>
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8px] bg-rose-400/10 text-rose-400 font-bold border border-rose-400/20 capitalize">{ticket.priority}</span>
+                      </div>
+                      <p className="text-xs font-bold text-on-surface leading-snug line-clamp-1">{ticket.subject}</p>
+                      <p className="text-[9px] text-outline">{ticket.users?.full_name ?? ticket.users?.email ?? "—"}</p>
                     </div>
-                    <p className="text-xs font-bold text-on-surface leading-snug">{ticket.subject}</p>
-                    <p className="text-[9px] text-outline">{ticket.user}</p>
+                    <button className="text-primary hover:underline text-xs font-semibold cursor-pointer shrink-0 ml-3">Reply</button>
                   </div>
-                  <button 
-                    onClick={() => alert(`Opening support portal reply desk for ${ticket.id}...`)}
-                    className="text-primary hover:underline text-xs font-semibold cursor-pointer shrink-0"
-                  >
-                    Reply
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Latest Reviews */}
           <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Latest Reviews</h3>
-            <div className="space-y-3">
-              {latestReviews.map((rev, i) => (
-                <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <div>
-                      <span className="font-bold text-on-surface">{rev.author}</span>
-                      <span className="text-[9px] text-outline ml-2 font-medium">Product: {rev.product}</span>
+            {loading ? <p className="text-xs text-on-surface-variant">Loading…</p> : (
+              <div className="space-y-3">
+                {latestReviews.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No reviews yet.</p>}
+                {latestReviews.map(rev => (
+                  <div key={rev.id} className="p-3 rounded-xl bg-white/5 border border-white/5 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <div>
+                        <span className="font-bold text-on-surface">{rev.users?.full_name ?? "Anonymous"}</span>
+                        <span className="text-[9px] text-outline ml-2 font-medium">{rev.templates?.title ?? "—"}</span>
+                      </div>
+                      <div className="flex text-amber-400">
+                        {Array.from({ length: rev.rating }).map((_, r) => (
+                          <span key={r} className="material-symbols-outlined text-xs">star</span>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex text-amber-400">
-                      {Array.from({ length: rev.rating }).map((_, r) => (
-                        <span key={r} className="material-symbols-outlined text-xs">star</span>
-                      ))}
-                    </div>
+                    <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">{rev.body ? `"${rev.body}"` : "No comment."}</p>
                   </div>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">"{rev.text}"</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Quick Actions & Recent Activity Feed */}
         <div className="space-y-8">
-          
-          {/* Quick Actions Panel */}
+          {/* Quick Actions */}
           <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
             <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-4 text-xs">
-              <button 
-                onClick={() => alert("Redirecting to refund wizard...")}
-                className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-on-surface transition-colors cursor-pointer text-left"
-              >
-                <span className="material-symbols-outlined text-primary text-base">receipt_long</span>
-                <div>
-                  <p className="font-bold">Refund Order</p>
-                  <p className="text-[9px] text-on-surface-variant mt-0.5">Revoke transactions</p>
-                </div>
-              </button>
-
-              <Link 
-                href="/admin/dashboard/products"
-                className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-on-surface transition-colors cursor-pointer text-left"
-              >
-                <span className="material-symbols-outlined text-primary text-base">add_box</span>
-                <div>
-                  <p className="font-bold">Add Product</p>
-                  <p className="text-[9px] text-on-surface-variant mt-0.5">Publish templates</p>
-                </div>
-              </Link>
-
-              <Link 
-                href="/admin/dashboard/licenses"
-                className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-on-surface transition-colors cursor-pointer text-left"
-              >
-                <span className="material-symbols-outlined text-primary text-base">vpn_key</span>
-                <div>
-                  <p className="font-bold">New License</p>
-                  <p className="text-[9px] text-on-surface-variant mt-0.5">Generate serial key</p>
-                </div>
-              </Link>
-
-              <Link 
-                href="/admin/dashboard/settings"
-                className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-on-surface transition-colors cursor-pointer text-left"
-              >
-                <span className="material-symbols-outlined text-primary text-base">settings</span>
-                <div>
-                  <p className="font-bold">Settings Setup</p>
-                  <p className="text-[9px] text-on-surface-variant mt-0.5">Platform switches</p>
-                </div>
-              </Link>
-            </div>
-          </div>
-
-          {/* Recent Activity Feed */}
-          <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
-            <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Activity Feed</h3>
-            <div className="space-y-4">
-              {activities.map((act, index) => (
-                <div key={index} className="flex gap-4 items-start text-xs">
-                  <div className={`w-2 h-2 rounded-full ${act.color} mt-1.5 flex-shrink-0`}></div>
-                  <div className="flex-1 flex justify-between items-start gap-4">
-                    <p className="text-on-surface-variant leading-relaxed">{act.text}</p>
-                    <span className="text-[10px] text-outline font-mono shrink-0">{act.time}</span>
+              {[
+                { icon: "add_box", label: "Add Product", desc: "Publish templates", href: "/admin/dashboard/products" },
+                { icon: "vpn_key", label: "New License", desc: "Generate serial key", href: "/admin/dashboard/licenses" },
+                { icon: "group", label: "Manage Users", desc: "User accounts", href: "/admin/dashboard/users" },
+                { icon: "support_agent", label: "Support Desk", desc: "Reply to tickets", href: "/admin/dashboard/orders" },
+              ].map(action => (
+                <Link key={action.label} href={action.href}
+                  className="flex items-center gap-2 p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-on-surface transition-colors cursor-pointer">
+                  <span className="material-symbols-outlined text-primary text-base">{action.icon}</span>
+                  <div>
+                    <p className="font-bold">{action.label}</p>
+                    <p className="text-[9px] text-on-surface-variant mt-0.5">{action.desc}</p>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
-        </div>
 
+          {/* Activity Feed */}
+          <div className="glass-card rounded-3xl p-6 border border-white/5 space-y-4">
+            <h3 className="text-sm font-bold text-on-surface border-b border-white/5 pb-2">Recent Activity Feed</h3>
+            {loading ? <p className="text-xs text-on-surface-variant">Loading…</p> : (
+              <div className="space-y-4">
+                {activity.length === 0 && <p className="text-xs text-on-surface-variant text-center py-4">No activity logged yet.</p>}
+                {activity.map((act, i) => (
+                  <div key={act.id ?? i} className="flex gap-4 items-start text-xs">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5 flex-shrink-0"></div>
+                    <div className="flex-1 flex justify-between items-start gap-4">
+                      <p className="text-on-surface-variant leading-relaxed">{act.action}</p>
+                      <span className="text-[10px] text-outline font-mono shrink-0">{fmtTime(act.created_at)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

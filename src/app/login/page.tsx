@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
 import { motion } from "framer-motion";
+import { signIn } from "@/app/actions/auth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -13,6 +14,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     if (loginSuccess) {
@@ -41,16 +43,35 @@ export default function LoginPage() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
-    // Simulate API request
-    setTimeout(() => {
+    setFormError("");
+
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+
+    try {
+      const result = await signIn(formData);
+      if (result?.error) {
+        setFormError(result.error);
+        setIsLoading(false);
+      } else {
+        // Redirection is handled by the server action
+        setLoginSuccess(true);
+      }
+    } catch (error) {
+      // Handle NEXT_REDIRECT which is thrown by Next.js redirect()
+      if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+        setLoginSuccess(true);
+        return;
+      }
+      setFormError("An unexpected error occurred");
       setIsLoading(false);
-      setLoginSuccess(true);
-    }, 1500);
+    }
   };
 
   return (
@@ -70,6 +91,17 @@ export default function LoginPage() {
         </motion.div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {formError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm flex items-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">error</span>
+              {formError}
+            </motion.div>
+          )}
+
           {/* Email Field */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block">

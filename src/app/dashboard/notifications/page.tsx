@@ -1,53 +1,68 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      title: "New Horizon AI SaaS Boilerplate version available",
-      desc: "Version v2.2.4 released. Read the changelogs and run update command.",
-      time: "2 hours ago",
-      type: "update",
-      unread: true,
-    },
-    {
-      id: "2",
-      title: "Licensing key successfully verified",
-      desc: "Nexus Admin Dashboard key was successfully registered at nexus-preview.103.dev",
-      time: "5 hours ago",
-      type: "license",
-      unread: true,
-    },
-    {
-      id: "3",
-      title: "Product wishlist discount alert",
-      desc: "Quantum UI Kit is now 15% off for Pro tier accounts.",
-      time: "Yesterday",
-      type: "deal",
-      unread: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return setLoading(false);
+      supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          setNotifications(data ?? []);
+          setLoading(false);
+        });
+    });
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
   };
 
-  const handleClear = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const handleClear = async (id: string) => {
+    const supabase = createClient();
+    await supabase.from("notifications").delete().eq("id", id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const dotColor: Record<string, string> = {
+    update: "bg-primary",
+    license: "bg-emerald-400",
+    order: "bg-secondary",
+    deal: "bg-tertiary",
+    general: "bg-outline",
+  };
+
+  const fmt = (d: string) => {
+    const diff = Date.now() - new Date(d).getTime();
+    const h = Math.floor(diff / 3600000);
+    if (h < 1) return "Just now";
+    if (h < 24) return `${h} hour${h > 1 ? "s" : ""} ago`;
+    const day = Math.floor(h / 24);
+    return day === 1 ? "Yesterday" : `${day} days ago`;
   };
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-on-surface">Console Notifications</h1>
           <p className="text-on-surface-variant text-sm mt-1">Stay updated with package updates, security warnings, and transaction logs.</p>
         </div>
-        <button 
+        <button
           onClick={handleMarkAllRead}
           className="bg-surface-container-high border border-outline-variant px-4 py-2 rounded-xl text-xs font-semibold hover:bg-surface-bright transition-colors text-on-surface cursor-pointer"
         >
@@ -55,34 +70,32 @@ export default function NotificationsPage() {
         </button>
       </div>
 
-      {/* Notifications List */}
       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
         <div className="p-6 border-b border-white/5">
           <h3 className="text-base font-bold text-on-surface">Inbox</h3>
         </div>
         <div className="divide-y divide-white/5">
-          {notifications.map((item, idx) => (
+          {loading && (
+            <div className="py-16 text-center text-on-surface-variant text-xs">Loading notifications…</div>
+          )}
+          {!loading && notifications.map((item) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className={`p-6 flex items-start gap-4 transition-colors relative ${item.unread ? "bg-primary/5" : ""}`}
+              className={`p-6 flex items-start gap-4 transition-colors relative ${!item.is_read ? "bg-primary/5" : ""}`}
             >
-              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${
-                item.type === "update" ? "bg-primary" :
-                item.type === "license" ? "bg-emerald-400" :
-                "bg-tertiary"
-              }`} />
+              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${dotColor[item.type] ?? "bg-outline"}`} />
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between gap-4">
-                  <h4 className={`text-xs md:text-sm font-bold text-on-surface ${item.unread ? "text-primary" : ""}`}>
+                  <h4 className={`text-xs md:text-sm font-bold text-on-surface ${!item.is_read ? "text-primary" : ""}`}>
                     {item.title}
                   </h4>
-                  <span className="text-[10px] text-outline font-mono">{item.time}</span>
+                  <span className="text-[10px] text-outline font-mono">{fmt(item.created_at)}</span>
                 </div>
-                <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">{item.desc}</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed max-w-3xl">{item.description}</p>
               </div>
-              <button 
+              <button
                 onClick={() => handleClear(item.id)}
                 className="p-1 rounded text-on-surface-variant hover:text-error hover:bg-white/5 transition-all cursor-pointer"
                 title="Dismiss"
@@ -91,7 +104,7 @@ export default function NotificationsPage() {
               </button>
             </motion.div>
           ))}
-          {notifications.length === 0 && (
+          {!loading && notifications.length === 0 && (
             <div className="py-16 text-center text-on-surface-variant text-xs">
               All caught up! No active notifications in your console.
             </div>

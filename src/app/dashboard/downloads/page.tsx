@@ -1,58 +1,44 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DownloadsPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [downloads, setDownloads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const downloadHistory = [
-    {
-      id: "DL-1092",
-      fileName: "horizon-ai-boilerplate-v2.1.0.zip",
-      productName: "Horizon AI SaaS Boilerplate",
-      version: "v2.1.0",
-      date: "June 25, 2026",
-      size: "142 MB",
-      licenseKey: "103_DEV_LIC_HAISB_8829_9918",
-    },
-    {
-      id: "DL-1091",
-      fileName: "nexus-dashboard-v4.0.0.zip",
-      productName: "Nexus Admin Dashboard",
-      version: "v4.0.0",
-      date: "June 12, 2026",
-      size: "89 MB",
-      licenseKey: "103_DEV_LIC_NXDB_1102_5546",
-    },
-    {
-      id: "DL-1090",
-      fileName: "rust-web-server-v1.0.0.zip",
-      productName: "Rust High-Performance Web Server",
-      version: "v1.0.0",
-      date: "May 30, 2026",
-      size: "24 MB",
-      licenseKey: "103_DEV_LIC_RWS_4492_1209",
-    },
-  ];
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return setLoading(false);
+      supabase
+        .from("downloads")
+        .select(`purchased_at, template_id, templates(id, title, description, version, file_url)`)
+        .eq("user_id", user.id)
+        .order("purchased_at", { ascending: false })
+        .then(({ data }) => {
+          setDownloads(data ?? []);
+          setLoading(false);
+        });
+    });
+  }, []);
 
-  const filteredHistory = downloadHistory.filter(
-    (item) =>
-      item.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.productName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filtered = downloads.filter(item =>
+    (item.templates?.title ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-on-surface">Downloads & Licenses</h1>
-          <p className="text-on-surface-variant text-sm mt-1">Review your download logs, re-download packages, and retrieve API/product license keys.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-on-surface">Downloads &amp; Licenses</h1>
+          <p className="text-on-surface-variant text-sm mt-1">Review your download logs, re-download packages, and retrieve product license keys.</p>
         </div>
       </div>
 
-      {/* Search Filter */}
       <div className="flex items-center bg-[#010f1f] border border-white/5 rounded-xl px-4 py-2 w-80 max-w-full focus-within:ring-1 focus-within:ring-primary transition-all">
         <span className="material-symbols-outlined text-outline text-lg mr-2">search</span>
         <input
@@ -64,59 +50,55 @@ export default function DownloadsPage() {
         />
       </div>
 
-      {/* Downloads Table */}
       <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
         <div className="p-6 border-b border-white/5">
-          <h3 className="text-base font-bold text-on-surface">Download History & Active Packages</h3>
+          <h3 className="text-base font-bold text-on-surface">Download History &amp; Active Packages</h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs md:text-sm">
-            <thead>
-              <tr className="border-b border-white/5 bg-surface-container-low/50 text-on-surface-variant text-[11px] uppercase font-semibold tracking-wider">
-                <th className="py-4 px-6">File / Product</th>
-                <th className="py-4 px-6">Version</th>
-                <th className="py-4 px-6">Date</th>
-                <th className="py-4 px-6">Size</th>
-                <th className="py-4 px-6">License Key</th>
-                <th className="py-4 px-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-on-surface">
-              {filteredHistory.map((item) => (
-                <tr key={item.id} className="hover:bg-surface-container-high/20 transition-colors">
-                  <td className="py-4 px-6">
-                    <div className="space-y-1">
-                      <p className="font-semibold text-on-surface">{item.productName}</p>
-                      <p className="text-[10px] text-outline font-mono">{item.fileName}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 font-mono text-primary">{item.version}</td>
-                  <td className="py-4 px-6 text-on-surface-variant">{item.date}</td>
-                  <td className="py-4 px-6 text-on-surface-variant">{item.size}</td>
-                  <td className="py-4 px-6">
-                    <code className="text-[10px] px-2 py-1 bg-white/5 rounded border border-white/5 font-mono text-on-surface-variant">
-                      {item.licenseKey}
-                    </code>
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+          {loading ? (
+            <div className="py-16 text-center text-on-surface-variant text-xs">Loading downloads…</div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs md:text-sm">
+              <thead>
+                <tr className="border-b border-white/5 bg-surface-container-low/50 text-on-surface-variant text-[11px] uppercase font-semibold tracking-wider">
+                  <th className="py-4 px-6">Product</th>
+                  <th className="py-4 px-6">Version</th>
+                  <th className="py-4 px-6">Date</th>
+                  <th className="py-4 px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-on-surface">
+                {filtered.map((item) => (
+                  <tr key={item.template_id} className="hover:bg-surface-container-high/20 transition-colors">
+                    <td className="py-4 px-6">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-on-surface">{item.templates?.title ?? "—"}</p>
+                        <p className="text-[10px] text-outline font-mono">{item.templates?.description ?? ""}</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 font-mono text-primary">{item.templates?.version ?? "—"}</td>
+                    <td className="py-4 px-6 text-on-surface-variant">{fmt(item.purchased_at)}</td>
+                    <td className="py-4 px-6 text-right">
+                      <a
+                        href={item.templates?.file_url ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`inline-flex items-center gap-1 bg-primary text-on-primary px-3 py-1.5 rounded-lg text-xs font-semibold hover:brightness-110 active:scale-95 transition-all ${!item.templates?.file_url ? "opacity-40 pointer-events-none" : "cursor-pointer"}`}
+                      >
                         <span className="material-symbols-outlined text-[14px]">download</span>
                         Download
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredHistory.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-on-surface-variant text-xs">
-                    No matching downloads found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-on-surface-variant text-xs">No matching downloads found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

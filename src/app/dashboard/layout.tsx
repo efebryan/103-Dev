@@ -121,18 +121,6 @@ export default function DashboardLayout({
         </nav>
 
         <div className="mt-auto pt-6 space-y-4">
-          <div className="p-4 rounded-xl bg-primary-container/20 border border-primary/20">
-            <p className="text-xs font-bold text-primary mb-1">PRO PLAN</p>
-            <p className="text-[13px] text-on-surface-variant mb-3">
-              Unlock unlimited licenses and cloud sync.
-            </p>
-            <Link
-              href="/dashboard/upgrade"
-              className="w-full py-2 px-4 bg-primary text-on-primary rounded-lg font-bold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer block text-center"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
           <Link
             href="/login"
             className="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant hover:bg-white/5 hover:text-on-surface rounded-lg transition-all duration-200"

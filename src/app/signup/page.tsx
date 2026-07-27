@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import AuthLayout from "@/components/AuthLayout";
 import { motion } from "framer-motion";
+import { signUp } from "@/app/actions/auth";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -23,6 +24,7 @@ export default function SignupPage() {
   }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [formError, setFormError] = useState("");
 
   // Password strength state
   const [pwdStrength, setPwdStrength] = useState({ score: 0, text: "Very Weak", color: "bg-error" });
@@ -95,16 +97,34 @@ export default function SignupPage() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsLoading(true);
-    // Simulate signup request
-    setTimeout(() => {
+    setFormError("");
+
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("fullName", fullName);
+
+    try {
+      const result = await signUp(formData);
+      if (result?.error) {
+        setFormError(result.error);
+        setIsLoading(false);
+      } else {
+        setSignupSuccess(true);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+        setSignupSuccess(true);
+        return;
+      }
+      setFormError("An unexpected error occurred");
       setIsLoading(false);
-      setSignupSuccess(true);
-    }, 1500);
+    }
   };
 
   return (
@@ -124,6 +144,17 @@ export default function SignupPage() {
         </motion.div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-error/10 border border-error/20 text-error px-4 py-3 rounded-xl text-sm flex items-center gap-2 mb-2"
+            >
+              <span className="material-symbols-outlined text-[18px]">error</span>
+              {formError}
+            </motion.div>
+          )}
+
           {/* Full Name Field */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider block">
